@@ -13,6 +13,7 @@ import { auth, createUserProfileDocument } from './firebase/firebase.utils';
 
 import { setCurrentUser } from './redux/user/user.action';
 import { selectCurrentUser } from './redux/user/user.selector';
+// import { selectCollectionsForPreview } from './redux/shop/shop.selector';
 
 import './App.css';
 
@@ -22,8 +23,10 @@ class App extends Component {
   componentDidMount() {
     const { setCurrentUser } = this.props;
 
+    // Concept : auth library from firebase is set to onAuthStateChanged(in built func) pass us userAuth object and this is listned here.  userAuth is a diff db in firebase console that holds the userUID & other info while signing in.
     this.unsubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
       if (userAuth) {
+        //The Whole user object including the UID is passed into the function createUserProfileDocument in firebase.util.js file inside firebase folder
         const userRef = await createUserProfileDocument(userAuth);
 
         userRef.onSnapshot(snapShot => {
@@ -36,6 +39,12 @@ class App extends Component {
         setCurrentUser(userAuth);
       }
     });
+
+    //this code is to import shop data into our firebase. It should be commented once it is imported
+    // addCollectionAndDocuments(
+    //   'collections',
+    //   collectionArray.map(({ title, items }) => ({ title, items }))
+    // );
   }
 
   componentWillUnmount() {
