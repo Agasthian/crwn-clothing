@@ -81,7 +81,10 @@ export const addCollectionAndDocuments = async (
   return await batch.commit(); //Fire batch calls. When commit succeds this return a null
 };
 
-//Firebase intialization
+
+
+/////////////////////////////////////
+////Firebase intialization
 firebase.initializeApp(config);
 
 export const auth = firebase.auth();
