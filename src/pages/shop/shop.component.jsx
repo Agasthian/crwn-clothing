@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
 import { Route } from 'react-router-dom';
 import { connect } from 'react-redux';
+import { createStructuredSelector } from 'reselect';
 
+import { fetchCollectionsStartAsync } from '../../redux/shop/shop.action';
 import {
-  firestore,
-  convertCollectionsSnapShotToMap
-} from '../../firebase/firebase.utils';
-
-import { updateCollections } from '../../redux/shop/shop.action';
+  selectCollectionIsFetching,
+  selectCollectionsLoaded
+} from '../../redux/shop/shop.selector';
 
 import WithSpinner from '../../components/with-spinner/with-spinner.component';
 
@@ -18,43 +18,54 @@ const CollectionOverviewWithSpinner = WithSpinner(CollectionsOverview);
 const CollectionPageWithSpinner = WithSpinner(CollectionPage);
 
 class Shop extends Component {
-  state = {
-    loading: true
-  };
-  unsubscribeFromSnapshot = null;
-
   //Storing the Shop data from firebase in the shop component so the child components like collectionOverview and collection-component.js can access. onSnapshot is the snapshot representation of the collection array from firestrom.
+  //Update - Shop data is moved to redux-state managment using thunk library, so old code is commented - to shopAction.js
 
   componentDidMount() {
-    const { updateCollections } = this.props;
-    const collectionRef = firestore.collection('collections');
+    const { fetchCollectionsStartAsync } = this.props;
+    fetchCollectionsStartAsync();
 
-    this.unsubscribeFromSnapshot = collectionRef.onSnapshot(async snapshot => {
-      //convertCollectionsSnapShotToMap function is present in firebase/firebase.Util.js
-      const collectionsMap = convertCollectionsSnapShotToMap(snapshot);
-      //updateCollections action in redux/shop/shopaction.js
-      updateCollections(collectionsMap);
-      this.setState({ loading: false });
-    });
+    // //promise based pattern - Kept for learning purpose/refernce
+    // collectionRef.get().then(snapshot => {
+    //   //convertCollectionsSnapShotToMap function is present in firebase/firebase.Util.js
+    //   const collectionsMap = convertCollectionsSnapShotToMap(snapshot);
+    //   //updateCollections action in redux/shop/shopaction.js
+    //   updateCollections(collectionsMap);
+    //   this.setState({ loading: false });
+    // });
+    // Observable pattern - using live relode using snapshop- update to simple .get() - written up
+    // this.unsubscribeFromSnapshot = collectionRef.onSnapshot(async snapshot => {
+    //   //convertCollectionsSnapShotToMap function is present in firebase/firebase.Util.js
+    //   const collectionsMap = convertCollectionsSnapShotToMap(snapshot);
+    //   //updateCollections action in redux/shop/shopaction.js
+    //   updateCollections(collectionsMap);
+    //   this.setState({ loading: false });
+    // });
   }
 
   render() {
-    const { match } = this.props;
-    const { loading } = this.state;
+    const { match, isCollectionFetching, isCollectionLoaded } = this.props;
+
     return (
       <div className='shop-page'>
         <Route
           exact
           path={`${match.path}`}
           render={props => (
-            <CollectionOverviewWithSpinner isLoading={loading} {...props} />
+            <CollectionOverviewWithSpinner
+              isLoading={isCollectionFetching}
+              {...props}
+            />
           )}
         />
         <Route
           path={`${match.path}/:collectionId`}
           // component={CollectionPage}
           render={props => (
-            <CollectionPageWithSpinner isLoading={loading} {...props} />
+            <CollectionPageWithSpinner
+              isLoading={!isCollectionLoaded}
+              {...props}
+            />
           )}
         />
         {/* Render inside Route(in place of component) -Render is a method that take a function with paramater, where the parameters in the function is the params the component will recieve */}
@@ -63,12 +74,16 @@ class Shop extends Component {
   }
 }
 
+const mapStateToProps = createStructuredSelector({
+  isCollectionFetching: selectCollectionIsFetching,
+  isCollectionLoaded: selectCollectionsLoaded
+});
+
 const mapDispatchToProps = dispatch => ({
-  updateCollections: collectionsMap =>
-    dispatch(updateCollections(collectionsMap))
+  fetchCollectionsStartAsync: () => dispatch(fetchCollectionsStartAsync())
 });
 
 export default connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps
 )(Shop);
